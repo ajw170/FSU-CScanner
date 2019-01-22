@@ -19,16 +19,18 @@
 typedef std::pair<const std::string, int> tokenPair;
 
 //custom comparator object to use with standard map; will make life easier when outputting table
+//ensures table is already sorted by longest string first, then by dictionary order
+//it is up to progammer to scan table to apply number level filter
 struct cmpByLengthThenByLexOrder {
     bool operator() (const std::string& a, const::std::string& b) const
     {
       if (a.length() == b.length())
       {
-        return a < b;
+        return a > b;
       }
       else
       {
-        return a.length() < b.length();
+        return a.length() > b.length();
       }
     }
 };
@@ -106,6 +108,21 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       }
     }
   } //quote case
+
+  //digit case
+  else if (isdigit(cur))
+  {
+    while (isdigit(cur))
+    {
+      lexeme[i++] = cur;
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    ++tokenMap["number"];
+    lexeme[i] = '\0';
+    return 0; //success
+  }
 
 
   //Dr. Uh's code begins here
