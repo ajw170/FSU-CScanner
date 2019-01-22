@@ -13,6 +13,7 @@
 #include <map>
 #include <string>
 #include <iomanip>
+#include <vector>
 
 #define MAXTOK 256 /* maximum token size */
 
@@ -60,7 +61,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   if (skip(inputStream) == EOF)
     return EOF;
 
-  //if a ditto character is encountered
+  //quote case, if a ditto character is encountered
   else if (cur == '"')
   {
     lexeme[i++] = cur;
@@ -86,7 +87,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       else if (cur == '\"') //end of string token found
       {
         lexeme[i++] = cur;
-        lexeme[i++] = '\0';
+        lexeme[i] = '\0';
         cur = peek;
         if (peek != EOF)
           peek = std::fgetc(inputStream);
@@ -95,7 +96,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       }
       else if (cur == '\n') //in this case, no end quote was found.  print error and increment line number
       {
-        lexeme[i++] = '\0';
+        lexeme[i] = '\0';
         std::cout << "missing \" for " << lexeme << " on line " << line++ << std::endl;
         return 1; //return error code 1
       }
@@ -125,7 +126,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   }
 
 
-  //Dr. Uh's code begins here
+  //identifier case
   else if (isalpha(cur) || cur == '_')
   {
     // ident token, keep processing until white space is reached nor non-compliant character is reached
@@ -140,6 +141,53 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
     lexeme[i] = '\0';
     return 0; // successful return
   }
+
+
+
+  //char case
+  else if (cur == '\'')
+  {
+    lexeme[i++] = cur;
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+
+    std::vector<char> charVector;
+    charVector.push_back('\'');
+
+    while (isprint(cur) && cur != '\'') //keep pushing characters onto the vector until the next ' is found OR newline is hit
+    {
+      charVector.push_back(cur);
+      lexeme[i++] = cur;
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    //analyze whether the last character encountered was a ' or a newline
+    if (cur == '\'') //quote found! now determine if it's valid
+    {
+      charVector.push_back(cur);
+
+
+      lexeme[i++] = cur;
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    else //a ' was not encountered, and a non-printable character was found
+    {
+      lexeme[i++] = '\0';
+      std::cout << "missing \' for " << lexeme << " on line " << line++ << std::endl;
+      return 1; //return error code 1
+    }
+  } //end char case
+
+
+
+
+
+
+
   else
   {
     /*** yada yada ***/
