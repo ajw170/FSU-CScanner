@@ -12,6 +12,8 @@
 #include <cassert>
 #include <map>
 #include <string>
+#include <iomanip>
+
 #define MAXTOK 256 /* maximum token size */
 
 typedef std::pair<const std::string, int> tokenPair;
@@ -117,6 +119,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       if (peek != EOF)
         peek = std::fgetc(inputStream);
     }
+    ++tokenMap["ident"];
     lexeme[i] = '\0';
     return 0; // successful return
   }
@@ -131,7 +134,18 @@ void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> ma
 {
   printf("        token         count\n");
   printf("--------------------- -----\n");
-  printf("%21s %5d\n","lexeme",5);
+
+  //iterate through map and print the token counts
+
+  //TODO - ensure order is correct
+  for (auto it = map.cbegin(); it != map.end(); ++it)
+  {
+    if (it->second != 0) //if there is something to print
+    {
+      std::cout << std::right << std::setw(21) << it->first << std::setw(5) << it->second << std::endl;
+    }
+  }
+
   map.begin();
 }
 
