@@ -17,6 +17,8 @@
 
 #define MAXTOK 256 /* maximum token size */
 
+//TODO - unclosed comments and line comments
+
 typedef std::pair<const std::string, int> tokenPair;
 
 int analyzeChar(std::vector<char> &); //function prototype
@@ -61,16 +63,17 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
 
   /* skip over whitespaces and check for EOF */
   if (skip(inputStream) == EOF)
+  {
     return EOF;
-
-  //quote case, if a ditto character is encountered
+  }
+  //string case, if a ditto character is encountered
   else if (cur == '"')
   {
     lexeme[i++] = cur;
     cur = peek;
     if (peek != EOF)
       peek = std::fgetc(inputStream);
-    while (isprint(cur) || cur == '\n') //if current character is printable, or if the character is newline
+    while (true) //if current character is printable, or if the character is newline
     {
       if (cur == '\\')
       {
@@ -94,9 +97,9 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
         if (peek != EOF)
           peek = std::fgetc(inputStream);
         ++tokenMap["string"];
-        break; //break out of loop and continue
+        return 0; //break out of loop and continue
       }
-      else if (cur == '\n') //in this case, no end quote was found.  print error and increment line number
+      else if (cur == '\n' || cur == EOF) //in this case, no end quote was found.  print error and increment line number
       {
         lexeme[i] = '\0';
         std::cout << "missing \" for " << lexeme << " on line " << line << std::endl;
@@ -127,7 +130,6 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
     return 0; //success
   }
 
-
   //identifier case
   else if (isalpha(cur) || cur == '_')
   {
@@ -143,8 +145,6 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
     lexeme[i] = '\0';
     return 0; // successful return
   }
-
-
 
   //char case
   else if (cur == '\'')
@@ -237,13 +237,534 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
           peek = std::fgetc(inputStream);
       }
     }
-  } //end char casr
+  } //end char case
 
-  else //somethine else was found...to be continued
+  //special token cases
+  else if (cur == '(')
   {
-    /*** yada yada ***/
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["("];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
   }
-  return 1;
+
+  else if (cur == ')')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap[")"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == ',')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap[","];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '.')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["."];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == ':')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap[":"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == ';')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap[";"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '?')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["?"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '[')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["["];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == ']')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["]"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '{')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["("];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '}')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["("];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '(')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["("];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
+  else if (cur == '&')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '&' && peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["&"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      if (cur == '&')
+        ++tokenMap["&&"];
+      if (cur == '=')
+        ++tokenMap["&="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '|')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '|' && peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["|"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      if (cur == '|')
+        ++tokenMap["||"];
+      if (cur == '=')
+        ++tokenMap["|="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '+')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '+' && peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["+"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      if (cur == '+')
+        ++tokenMap["++"];
+      if (cur == '=')
+        ++tokenMap["+="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '-')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '-' && peek != '=' && peek != '>')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["-"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      if (cur == '-')
+        ++tokenMap["--"];
+      if (cur == '=')
+        ++tokenMap["-="];
+      if (cur == '>')
+        ++tokenMap["->"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '^')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["^"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["^="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '%')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["%"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["%="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '*')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["*"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["^*="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '/')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["/"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["/="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '=')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["=="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+  else if (cur == '!')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '=')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["!"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = cur;
+      lexeme[i] = '\0';
+      ++tokenMap["!="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+    }
+    return 0;
+  }
+
+
+  //tricky case where there could be up to three characters in the token for
+  // <, <<, <<=, >, >>, and >>=
+  else if (cur == '<')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '<')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap["<"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else //the peek value was "<"
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      if (peek != '=')
+      {
+        lexeme[i++] = cur;
+        lexeme[i] = '\0';
+        ++tokenMap["<<"];
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        return 0;
+      }
+      else //the peek value was "="
+      {
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        lexeme[i++] = '<';
+        lexeme[i++] = cur;
+        lexeme[i] = '\0';
+        ++tokenMap["<<="];
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        return 0;
+      }
+    }
+  }
+
+  else if (cur == '>')
+  {
+    lexeme[i++] = cur;
+    //check to see following character possibilities
+    if (peek != '>')
+    {
+      lexeme[i] = '\0';
+      ++tokenMap[">"];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else //the peek value was ">"
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      if (peek != '=')
+      {
+        lexeme[i++] = cur;
+        lexeme[i] = '\0';
+        ++tokenMap[">>"];
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        return 0;
+      }
+      else //the peek value was "="
+      {
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        lexeme[i++] = '>';
+        lexeme[i++] = cur;
+        lexeme[i] = '\0';
+        ++tokenMap[">>="];
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        return 0;
+      }
+    }
+  }
+
+  else
+  {
+    //should NEVER get here
+    std::cout << "An error occurred on the token read" << std::endl;
+    return 1;
+  }
 }
 
 int analyzeChar(std::vector<char> & charVector)
@@ -292,7 +813,7 @@ int analyzeChar(std::vector<char> & charVector)
       return -4; //invalid octal constnat
     }
   }
-  else if (length == 6)
+  else if (length == 6) //would only be correct if it is in the form of '\yyy' where y is an octal
   {
     if ((charVector[1] == '\\') && (isdigit(charVector[2])) && (((int)(charVector[2] - '0') <= 7))
         && (isdigit(charVector[3])) && (((int)(charVector[3] - '0') <= 7))
@@ -304,20 +825,16 @@ int analyzeChar(std::vector<char> & charVector)
     {
       return -3; //was too long but not an octal
     }
-    else
+    else //all other cases, invalid octal constant
     {
-      return -4; //invalid octal constnat
+      return -4;
     }
   }
-  else //all other cases, too long
+  else
   {
-    return -3;
+    return -3; //too long
   }
 }
-
-
-
-
 
 void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> map)
 {
@@ -331,7 +848,7 @@ void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> ma
   {
     if (it->second != 0) //if there is something to print
     {
-      std::cout << std::right << std::setw(21) << it->first << std::setw(5) << it->second << std::endl;
+      std::cout << std::right << std::setw(21) << it->first << std::setw(6) << it->second << std::endl;
     }
   }
 
@@ -348,7 +865,7 @@ int main()
 
   //TODO - Change this back to stdin for linprog use
   //FILE inputStream = stdin;
-  FILE * inputStream = fopen("input.in","r");
+  FILE * inputStream = fopen("input3.in","r");
 
   //std::string testString = "number";
   //std::string testToken = "string";
