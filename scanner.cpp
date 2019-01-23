@@ -25,7 +25,8 @@ int analyzeChar(std::vector<char> &); //function prototype
 
 //custom comparator object to use with standard map; will make life easier when outputting table
 //ensures table is already sorted by longest string first, then by dictionary order
-//it is up to progammer to scan table to apply number level filter
+//it is up to another implementation to scan table to apply number level filter
+
 struct cmpByLengthThenByLexOrder {
     bool operator() (const std::string& a, const::std::string& b) const
     {
@@ -44,14 +45,25 @@ int cur = 0;    /* current character being processed */
 int peek = 0;   /* next charcter to be processed */
 int line = 0;   /* keeps track of the line number */
 
-int skip(FILE  * inputStream) {
-  /* Potentially needs more updating? */
-  //TODO - check if this needs more updating
+int skip(FILE  * inputStream)
+{
   while (isspace(cur)) {
     if (cur == '\n')
       ++line;
     cur = peek;
-    peek = std::fgetc(inputStream);
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+  }
+  return cur;
+}
+
+int skipline(FILE * inputStream)
+{
+  while (cur != '\n' && cur != EOF)
+  {
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
   }
   return cur;
 }
@@ -361,6 +373,17 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
     return 0;
   }
 
+  else if (cur == '~')
+  {
+    lexeme[i++] = cur;
+    lexeme[i]= '\0';
+    ++tokenMap["~"];
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    return 0;
+  }
+
   else if (cur == '(')
   {
     lexeme[i++] = cur;
@@ -582,8 +605,15 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
     return 0;
   }
 
+  //Special case where this could indicate the start of a comment
   else if (cur == '/')
   {
+    //check to see if the next character is also '/' , if so, skip to next line
+    if (peek == '/')
+    {
+      skipline(inputStream);
+      return 1;
+    }
     lexeme[i++] = cur;
     //check to see following character possibilities
     if (peek != '=')
@@ -761,9 +791,11 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
 
   else
   {
-    //should NEVER get here
-    std::cout << "An error occurred on the token read" << std::endl;
-    return 1;
+      std::cout << "illegal character: " << (char)cur << " on line " << line << std::endl;
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 1;
   }
 }
 
@@ -891,7 +923,7 @@ int main()
   tokenMap.insert(tokenPair("(",0)); tokenMap.insert(tokenPair(")",0)); tokenMap.insert(tokenPair(",",0));
   tokenMap.insert(tokenPair(".",0)); tokenMap.insert(tokenPair(":",0)); tokenMap.insert(tokenPair(";",0));
   tokenMap.insert(tokenPair("?",0)); tokenMap.insert(tokenPair("[",0)); tokenMap.insert(tokenPair("]",0));
-  tokenMap.insert(tokenPair("{",0)); tokenMap.insert(tokenPair("}",0)); tokenMap.insert(tokenPair("",0)); //possible removal, is a string
+  tokenMap.insert(tokenPair("{",0)); tokenMap.insert(tokenPair("}",0)); tokenMap.insert(tokenPair("",0)); tokenMap.insert(tokenPair("~",0));
   tokenMap.insert(tokenPair("&&",0)); tokenMap.insert(tokenPair("||",0)); tokenMap.insert(tokenPair("++",0));
   tokenMap.insert(tokenPair("--",0)); tokenMap.insert(tokenPair("->",0));
 
