@@ -19,6 +19,8 @@
 
 typedef std::pair<const std::string, int> tokenPair;
 
+int analyzeChar(std::vector<char> &); //function prototype
+
 //custom comparator object to use with standard map; will make life easier when outputting table
 //ensures table is already sorted by longest string first, then by dictionary order
 //it is up to progammer to scan table to apply number level filter
@@ -44,7 +46,7 @@ int skip(FILE  * inputStream) {
   /* Potentially needs more updating? */
   //TODO - check if this needs more updating
   while (isspace(cur)) {
-    if (cur == '\n' || cur == '\r')
+    if (cur == '\n')
       ++line;
     cur = peek;
     peek = std::fgetc(inputStream);
@@ -97,7 +99,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       else if (cur == '\n') //in this case, no end quote was found.  print error and increment line number
       {
         lexeme[i] = '\0';
-        std::cout << "missing \" for " << lexeme << " on line " << line++ << std::endl;
+        std::cout << "missing \" for " << lexeme << " on line " << line << std::endl;
         return 1; //return error code 1
       }
       else
@@ -147,53 +149,175 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   //char case
   else if (cur == '\'')
   {
+    std::vector<char> charVector;
+    charVector.push_back(cur);
+
     lexeme[i++] = cur;
     cur = peek;
     if (peek != EOF)
       peek = std::fgetc(inputStream);
 
-    std::vector<char> charVector;
-    charVector.push_back('\'');
-
-    while (isprint(cur) && cur != '\'') //keep pushing characters onto the vector until the next ' is found OR newline is hit
+    while (true)
     {
-      charVector.push_back(cur);
-      lexeme[i++] = cur;
-      cur = peek;
-      if (peek != EOF)
-        peek = std::fgetc(inputStream);
+      if (cur == '\\' && charVector.size() < 2) //if an escape character is encountered followed by a '
+      {
+        lexeme[i++] = cur;
+        charVector.push_back(cur);
+        cur = peek; //advance
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        if (cur == '\'')
+        {
+          // a \' character has been identified, so continue with the loop with no effect
+          lexeme[i++] = cur;
+          charVector.push_back(cur);
+          cur = peek; //advance
+          if (peek != EOF)
+            peek = std::fgetc(inputStream);
+        }
+      } //end dealing with \' case
+
+      else if (cur == '\n' || cur == EOF) //in this case, no end quote was found.  print error and increment line number
+      {
+        lexeme[i] = '\0';
+        std::cout << "missing \' for " << lexeme << " on line " << line << std::endl;
+        return 1; //return error code 1
+      }
+      else if (cur == '\'') //ending quote found.  put character on vector and send for further analysis
+      {
+        lexeme[i++] = cur;
+        charVector.push_back(cur);
+        lexeme[i] = '\0'; //terminate lexeme
+
+        cur = peek; //advance
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+
+        int result = analyzeChar(charVector);
+
+        /*process here depending on result */
+        if (result == 0)
+        {
+          ++tokenMap["char"];
+          return 0;
+        }
+        else if (result == -1)
+        {
+          std::cout << "character has 0 length on line " << line << std::endl;
+          return 1;
+        }
+        else if (result == -2)
+        {
+          std::cout << "missing \' for " << lexeme << " on line " << line << std::endl;
+          return 1;
+        }
+        else if (result == -3)
+        {
+          std::cout << "character constant " << lexeme << " is too long on line " << line << std::endl;
+          return 1;
+        }
+        else if (result == -4)
+        {
+          std::cout << "illegal octal constant " << lexeme << " on line " << line << std::endl;
+          return 1;
+        }
+        else
+        {
+          std::cout << "a serious error which should not have occurred has occurred." << std::endl;
+          return 1; //if we get here then something went wrong
+        }
+
+      }
+      else //if any other printable character other than \n was found
+      {
+        lexeme[i++] = cur;
+        charVector.push_back(cur);
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+      }
     }
-    //analyze whether the last character encountered was a ' or a newline
-    if (cur == '\'') //quote found! now determine if it's valid
-    {
-      charVector.push_back(cur);
+  } //end char casr
 
-
-      lexeme[i++] = cur;
-      cur = peek;
-      if (peek != EOF)
-        peek = std::fgetc(inputStream);
-    }
-    else //a ' was not encountered, and a non-printable character was found
-    {
-      lexeme[i++] = '\0';
-      std::cout << "missing \' for " << lexeme << " on line " << line++ << std::endl;
-      return 1; //return error code 1
-    }
-  } //end char case
-
-
-
-
-
-
-
-  else
+  else //somethine else was found...to be continued
   {
     /*** yada yada ***/
   }
-  return 0;
+  return 1;
 }
+
+int analyzeChar(std::vector<char> & charVector)
+{
+  //NOTE:  all charVectors that arrive to this function will have the form 'xxxxxx' where xxxxxx is 1 or more characters
+  //Therefore, the minimum length will always be 2.
+
+  //codes:  0 => success, the char is valid
+  //codes: -1 => character has zero length on line x
+  //codes: -2 => missing ' for '\' on line x
+  //codes: -3 => character constant 'xxxxxx' is too long on line x
+  //codes: -4 => illegal octal constant '\xxx' on line x
+
+  //see if the char is valid.  if it is, print it and
+  int length = charVector.size(); //if it is less than 2, there is a major problem
+
+  if (length == 2)
+    return -1;
+  else if (length == 3) //correct length, just ensure it isn't '\'
+  {
+    if (charVector[1] == '\\')
+      return -2;
+    else //correct char character
+      return 0;
+  }
+  else if (length == 4) //could be correct assuming first character is '\'
+  {
+    if (charVector[1] == '\\')
+      return 0;
+    else
+      return -3;
+  }
+  else if (length == 5) //would only be correct if it is in the form of '\yy' where y is an octal
+  {
+    if ((charVector[1] == '\\') && (isdigit(charVector[2])) && (((int)(charVector[2] - '0') <= 7))
+          && (isdigit(charVector[3])) && (((int)(charVector[3] - '0') <= 7)))
+    {
+      return 0; //valid octal
+    }
+    else if (charVector[1] != '\\')
+    {
+      return -3; //was too long but not an octal
+    }
+    else
+    {
+      return -4; //invalid octal constnat
+    }
+  }
+  else if (length == 6)
+  {
+    if ((charVector[1] == '\\') && (isdigit(charVector[2])) && (((int)(charVector[2] - '0') <= 7))
+        && (isdigit(charVector[3])) && (((int)(charVector[3] - '0') <= 7))
+        && (isdigit(charVector[4])) && (((int)(charVector[4] - '0') <= 7)))
+    {
+      return 0; //valid octal
+    }
+    else if (charVector[1] != '\\')
+    {
+      return -3; //was too long but not an octal
+    }
+    else
+    {
+      return -4; //invalid octal constnat
+    }
+  }
+  else //all other cases, too long
+  {
+    return -3;
+  }
+}
+
+
+
+
 
 void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> map)
 {
