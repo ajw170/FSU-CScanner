@@ -3,6 +3,8 @@
  *  Class: COP4020
  *  Assignment: Proj 1 (Implementing a C Scanner)
  *  Complie: "gcc -g -o cscan.exe cscan.c"
+ *
+ *  Note that this code is self-documenting when needed.
  */
 
 #include <cstdio>
@@ -16,8 +18,6 @@
 #include <vector>
 
 #define MAXTOK 256 /* maximum token size */
-
-//TODO - unclosed comments and line comments
 
 typedef std::pair<const std::string, int> tokenPair;
 
@@ -65,6 +65,34 @@ int skipline(FILE * inputStream)
     if (peek != EOF)
       peek = std::fgetc(inputStream);
   }
+  ++line;
+  return cur;
+}
+
+int skipcomment(FILE * inputStream)
+{
+  while (cur != '*' || peek != '/')
+  {
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    if (cur == '\n')
+      ++line;
+    if (cur == EOF) //if EOF is hit
+    {
+      std::cout << "Unclosed comment" << std::endl;
+      return EOF;
+    }
+  }
+  //advance the pointers by two to get them where they should be
+  cur = peek;
+  if (peek != EOF)
+    peek = std::fgetc(inputStream);
+  //second advance
+  cur = peek;
+  if (peek != EOF)
+    peek = std::fgetc(inputStream);
+
   return cur;
 }
 
@@ -614,6 +642,13 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       skipline(inputStream);
       return 1;
     }
+    if (peek == '*')
+    {
+      skipcomment(inputStream);
+      return 1;
+    }
+
+    //not a commend
     lexeme[i++] = cur;
     //check to see following character possibilities
     if (peek != '=')
@@ -908,7 +943,7 @@ int main()
 
   //TODO - Change this back to stdin for linprog use
   //FILE inputStream = stdin;
-  FILE * inputStream = fopen("input3.in","r");
+  FILE * inputStream = fopen("maxTest.in","r");
 
   //create map to hold counts, initialize all to 0
   std::map<const std::string,int, cmpByLengthThenByLexOrder> tokenMap;

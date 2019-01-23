@@ -1,0 +1,152 @@
+/*
+ *  Name: Andrew J Wood
+ *  Class: COP4020
+ *  Assignment: Proj 1 (Implementing a C Scanner)
+ *  Complie: "gcc -g -o cscan.exe cscan.c"
+ */
+
+#include <cstdio>
+#include <iostream>
+#include <cstdlib>
+#include <cctype>
+#include <cassert>
+#include <map>
+#include <string>
+#include <iomanip>
+#include <vector>
+
+#define MAXTOK 256 /* maximum token size */
+
+typedef std::pair<const std::string, int> tokenPair;
+
+int analyzeChar(std::vector<char> &); //function prototype
+
+//custom comparator object to use with standard map; will make life easier when outputting table
+//ensures table is already sorted by longest string first, then by dictionary order
+//it is up to another implementation to scan table to apply number level filter
+
+struct cmpByLengthThenByLexOrder {
+    bool operator() (const std::string& a, const::std::string& b) const
+    {
+      if (a.length() == b.length())
+      {
+        return a < b;
+      }
+      else
+      {
+        return a.length() > b.length();
+      }
+    }
+};
+
+int cur = 0;    /* current character being processed */
+int peek = 0;   /* next charcter to be processed */
+int line = 0;   /* keeps track of the line number */
+
+int skip(FILE  * inputStream)
+{
+  while (isspace(cur)) {
+    if (cur == '\n')
+      ++line;
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+  }
+  return cur;
+}
+
+int skipline(FILE * inputStream)
+{
+  while (cur != '\n' && cur != EOF)
+  {
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+  }
+  return cur;
+}
+
+int skipcomment(FILE * inputStream)
+{
+  while (cur != '*' || peek != '/')
+  {
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+
+    if (cur == EOF) //if EOF is hit
+    {
+      std::cout << "Unclosed comment" << std::endl;
+      return EOF;
+    }
+  }
+  //advance the pointers by two to get them where they should be
+  cur = peek;
+  if (peek != EOF)
+    peek = std::fgetc(inputStream);
+  //second advance
+  cur = peek;
+  if (peek != EOF)
+    peek = std::fgetc(inputStream);
+
+  return cur;
+}
+
+/* Find a token and store the chars into lexeme buffer */
+int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpByLengthThenByLexOrder> & tokenMap)
+{
+  int i = 0;
+
+  /* skip over whitespaces and check for EOF */
+  if (skip(inputStream) == EOF)
+  {
+    return EOF;
+  }
+  //string case, if a ditto character is encountered
+  else if (cur == '"')
+  {
+    lexeme[i++] = cur;
+    cur = peek;
+    if (peek != EOF)
+      peek = std::fgetc(inputStream);
+    while (true) //if current character is printable, or if the character is newline
+    {
+      if (cur == '\\')
+      {
+        lexeme[i++] = cur;
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        if (cur == '\"')
+        {
+          lexeme[i++] = cur;
+          cur = peek;
+          if (peek != EOF)
+            peek = std::fgetc(inputStream);
+        }
+      }
+      else if (cur == '\"') //end of string token found
+      {
+        lexeme[i++] = cur;
+        lexeme[i] = '\0';
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+        ++tokenMap["string"];
+        return 0; //break out of loop and continue
+      }
+      else if (cur == '\n' || cur == EOF) //in this case, no end quote was found.  print error and increment line number
+      {
+        lexeme[i] = '\0';
+        std::cout << "missing \" for " << lexeme << " on line " << line << std::endl;
+        return 1; //return error code 1
+      }
+      else
+      {
+        lexeme[i++] = cur;
+        cur = peek;
+        if (peek != EOF)
+          peek = std::fgetc(inputStream);
+      }
+    }
+  } //quote case
