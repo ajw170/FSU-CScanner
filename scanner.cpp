@@ -31,7 +31,7 @@ struct cmpByLengthThenByLexOrder {
     {
       if (a.length() == b.length())
       {
-        return a > b;
+        return a < b;
       }
       else
       {
@@ -343,7 +343,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   {
     lexeme[i++] = cur;
     lexeme[i]= '\0';
-    ++tokenMap["("];
+    ++tokenMap["{"];
     cur = peek;
     if (peek != EOF)
       peek = std::fgetc(inputStream);
@@ -354,7 +354,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   {
     lexeme[i++] = cur;
     lexeme[i]= '\0';
-    ++tokenMap["("];
+    ++tokenMap["}"];
     cur = peek;
     if (peek != EOF)
       peek = std::fgetc(inputStream);
@@ -841,16 +841,27 @@ void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> ma
   printf("        token         count\n");
   printf("--------------------- -----\n");
 
-  //iterate through map and print the token counts
+  int maxCount = 0;
 
-  //TODO - ensure order is correct
+  //iterate through map and print the token counts
+  //determine highest number of single token types
   for (auto it = map.cbegin(); it != map.end(); ++it)
   {
-    if (it->second != 0) //if there is something to print
+    if ((it->second) > maxCount)
+      maxCount = it->second;
+  }
+
+  for (int i = maxCount; i > 0; --i)
+  {
+    for (auto it = map.cbegin(); it != map.end(); ++it)
     {
-      std::cout << std::right << std::setw(21) << it->first << std::setw(6) << it->second << std::endl;
+      if (it->second == i) //if there is something to print
+      {
+        std::cout << std::right << std::setw(21) << it->first << std::setw(6) << it->second << std::endl;
+      }
     }
   }
+
 
   map.begin();
 }
@@ -866,12 +877,6 @@ int main()
   //TODO - Change this back to stdin for linprog use
   //FILE inputStream = stdin;
   FILE * inputStream = fopen("input3.in","r");
-
-  //std::string testString = "number";
-  //std::string testToken = "string";
-
-  //std::cout << testString.compare(testToken);
-
 
   //create map to hold counts, initialize all to 0
   std::map<const std::string,int, cmpByLengthThenByLexOrder> tokenMap;
