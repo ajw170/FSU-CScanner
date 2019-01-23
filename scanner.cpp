@@ -2,7 +2,7 @@
  *  Name: Andrew J Wood
  *  Class: COP4020
  *  Assignment: Proj 1 (Implementing a C Scanner)
- *  Complie: "gcc -g -o cscan.exe cscan.c"
+ *  Complie: "g++ -g -Wall -Wextra -std=c++11 -o scanner.exe wood.cpp"
  *
  *  Note that this code is self-documenting when needed.
  */
@@ -905,8 +905,8 @@ int analyzeChar(std::vector<char> & charVector)
 
 void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> map)
 {
-  printf("        token         count\n");
-  printf("--------------------- -----\n");
+  printf("        token          count\n");
+  printf("---------------------  -----\n");
 
   int maxCount = 0;
 
@@ -924,7 +924,7 @@ void printSummary (std::map<const std::string,int, cmpByLengthThenByLexOrder> ma
     {
       if (it->second == i) //if there is something to print
       {
-        std::cout << std::right << std::setw(21) << it->first << std::setw(6) << it->second << std::endl;
+        std::cout << std::right << std::setw(21) << it->first << std::setw(7) << it->second << std::endl;
       }
     }
   }
@@ -942,8 +942,8 @@ int main()
   //used for debugging purposes with CLion
 
   //TODO - Change this back to stdin for linprog use
-  //FILE inputStream = stdin;
-  FILE * inputStream = fopen("maxTest.in","r");
+  FILE * inputStream = stdin;
+  //FILE * inputStream = fopen("maxTest.in","r");
 
   //create map to hold counts, initialize all to 0
   std::map<const std::string,int, cmpByLengthThenByLexOrder> tokenMap;
