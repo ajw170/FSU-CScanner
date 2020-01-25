@@ -2,7 +2,7 @@
  *  Name: Andrew J Wood
  *  Class: COP4020
  *  Assignment: Proj 1 (Implementing a C Scanner)
- *  Complie: "g++ -g -Wall -Wextra -std=c++11 -o scanner.exe wood.cpp"
+ *  Complie: "g++ -g -Wall -Wextra -std=c++11 -o cscan.exe wood.cpp"
  *
  *  Note that this code is self-documenting when needed.
  */
@@ -27,7 +27,8 @@ int analyzeChar(std::vector<char> &); //function prototype
 //ensures table is already sorted by longest string first, then by dictionary order
 //it is up to another implementation to scan table to apply number level filter
 
-struct cmpByLengthThenByLexOrder {
+class cmpByLengthThenByLexOrder {
+    public:
     bool operator() (const std::string& a, const::std::string& b) const
     {
       if (a.length() == b.length())
@@ -80,7 +81,7 @@ int skipcomment(FILE * inputStream)
       ++line;
     if (cur == EOF) //if EOF is hit
     {
-      std::cout << "Unclosed comment" << std::endl;
+      std::cerr << "Unclosed comment" << std::endl;
       return EOF;
     }
   }
@@ -142,7 +143,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       else if (cur == '\n' || cur == EOF) //in this case, no end quote was found.  print error and increment line number
       {
         lexeme[i] = '\0';
-        std::cout << "missing \" for " << lexeme << " on line " << line << std::endl;
+        std::cerr << "missing \" for " << lexeme << " on line " << line << std::endl;
         return 1; //return error code 1
       }
       else
@@ -220,7 +221,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
       else if (cur == '\n' || cur == EOF) //in this case, no end quote was found.  print error and increment line number
       {
         lexeme[i] = '\0';
-        std::cout << "missing \' for " << lexeme << " on line " << line << std::endl;
+        std::cerr << "missing \' for " << lexeme << " on line " << line << std::endl;
         return 1; //return error code 1
       }
       else if (cur == '\'') //ending quote found.  put character on vector and send for further analysis
@@ -243,27 +244,27 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
         }
         else if (result == -1)
         {
-          std::cout << "character has 0 length on line " << line << std::endl;
+          std::cerr << "character has 0 length on line " << line << std::endl;
           return 1;
         }
         else if (result == -2)
         {
-          std::cout << "missing \' for " << lexeme << " on line " << line << std::endl;
+          std::cerr << "missing \' for " << lexeme << " on line " << line << std::endl;
           return 1;
         }
         else if (result == -3)
         {
-          std::cout << "character constant " << lexeme << " is too long on line " << line << std::endl;
+          std::cerr << "character constant " << lexeme << " is too long on line " << line << std::endl;
           return 1;
         }
         else if (result == -4)
         {
-          std::cout << "illegal octal constant " << lexeme << " on line " << line << std::endl;
+          std::cerr << "illegal octal constant " << lexeme << " on line " << line << std::endl;
           return 1;
         }
         else
         {
-          std::cout << "a serious error which should not have occurred has occurred." << std::endl;
+          std::cerr << "a serious error which should not have occurred has occurred." << std::endl;
           return 1; //if we get here then something went wrong
         }
 
@@ -733,12 +734,26 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
 
 
   //tricky case where there could be up to three characters in the token for
-  // <, <<, <<=, >, >>, and >>=
+  // <, <<, <=, <<=, >, >=, >>, and >>=
+  // note - in previous implementation I forgot the <= and >= cases
   else if (cur == '<')
   {
     lexeme[i++] = cur;
     //check to see following character possibilities
-    if (peek != '<')
+    if (peek == '=') //if the peek value is specifically '='
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = '=';
+      lexeme[i] = '\0';
+      ++tokenMap["<="];
+      cur = peek; //special case, so advance current as well
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else if (peek != '<') //if the peek value is something that isn't '=' or '<'
     {
       lexeme[i] = '\0';
       ++tokenMap["<"];
@@ -783,7 +798,20 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
   {
     lexeme[i++] = cur;
     //check to see following character possibilities
-    if (peek != '>')
+    if (peek == '=') //if the peek value is specifically '='
+    {
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      lexeme[i++] = '=';
+      lexeme[i] = '\0';
+      ++tokenMap[">="];
+      cur = peek;
+      if (peek != EOF)
+        peek = std::fgetc(inputStream);
+      return 0;
+    }
+    else if (peek != '>') //the peek value is not '=' or '>'
     {
       lexeme[i] = '\0';
       ++tokenMap[">"];
@@ -826,7 +854,7 @@ int scan(char *lexeme, FILE * inputStream, std::map<const std::string,int, cmpBy
 
   else
   {
-      std::cout << "illegal character: " << (char)cur << " on line " << line << std::endl;
+      std::cerr << "illegal character: " << (char)cur << " on line " << line << std::endl;
       cur = peek;
       if (peek != EOF)
         peek = std::fgetc(inputStream);
@@ -943,7 +971,7 @@ int main()
 
   //TODO - Change this back to stdin for linprog use
   FILE * inputStream = stdin;
-  //FILE * inputStream = fopen("maxTest.in","r");
+  //FILE * inputStream = fopen("wood.cpp","r");
 
   //create map to hold counts, initialize all to 0
   std::map<const std::string,int, cmpByLengthThenByLexOrder> tokenMap;
